@@ -1,0 +1,51 @@
+/* Basic styles for EchoMind */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.avatar-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 20px;
+}
+
+/* Dashboard cards */
+.card {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* Patient list styles */
+.patient-list-item {
+    transition: background-color 0.2s;
+}
+
+.patient-list-item:hover {
+    background-color: rgba(0,123,255,0.05);
+}
+
+/* Sentiment score colors */
+.score-high {
+    color: #28a745;
+}
+
+.score-medium {
+    color: #ffc107;
+}
+
+.score-low {
+    color: #dc3545;
+}

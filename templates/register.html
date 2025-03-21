@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - EchoMind</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">EchoMind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register">Register</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Register</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if error %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
+                        <form method="post" action="/register">
+                            <div class="mb-3">
+                                <label for="user_type" class="form-label">I am a:</label>
+                                <select class="form-select" id="user_type" name="user_type" required>
+                                    <option value="patient">Patient</option>
+                                    <option value="doctor">Healthcare Provider</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="first_name" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="last_name" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="telegram_id" class="form-label">Telegram Username</label>
+                                <input type="text" class="form-control" id="telegram_id" name="telegram_id" required>
+                                <small class="form-text text-muted">Required for the chatbot to reach you</small>
+                            </div>
+                            <div class="doctor-fields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="license_number" class="form-label">Medical License Number</label>
+                                    <input type="text" class="form-control" id="license_number" name="license_number" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="institution" class="form-label">Institution/Hospital</label>
+                                    <input type="text" class="form-control" id="institution" name="institution" required>
+                                </div>
+                            </div>
+                            <div class="patient-fields">
+                                <div class="mb-3">
+                                    <label for="condition" class="form-label">Condition</label>
+                                    <select class="form-select" id="condition" name="condition">
+                                        <option value="">Select your condition</option>
+                                        <option value="depression">Depression</option>
+                                        <option value="anxiety">Anxiety</option>
+                                        <option value="bipolar">Bipolar Disorder</option>
+                                        <option value="ptsd">PTSD</option>
+                                        <option value="schizophrenia">Schizophrenia</option>
+                                        <option value="eating_disorder">Eating Disorder</option>
+                                        <option value="addiction">Addiction</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <small class="form-text text-muted">Helps us tailor our approach to your specific needs</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="doctor_email" class="form-label">Your Doctor's Email</label>
+                                    <input type="email" class="form-control" id="doctor_email" name="doctor_email" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">I agree to the terms and conditions</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </form>
+                        <hr>
+                        <p>Already have an account? <a href="/login">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light text-center text-lg-start mt-5">
+        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+            © 2025 EchoMind - Mental Health Monitoring
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add this to the script section at the bottom -->
+    <script>
+        document.getElementById('user_type').addEventListener('change', function() {
+            const doctorFields = document.querySelector('.doctor-fields');
+            const patientFields = document.querySelector('.patient-fields');
+            const licenseInput = document.getElementById('license_number');
+            const institutionInput = document.getElementById('institution');
+            const telegramInput = document.getElementById('telegram_id');
+            const doctorEmailInput = document.getElementById('doctor_email');
+            
+            if (this.value === 'doctor') {
+                doctorFields.style.display = 'block';
+                patientFields.style.display = 'none';
+                licenseInput.required = true;
+                institutionInput.required = true;
+                telegramInput.required = false;
+                doctorEmailInput.required = false;
+            } else {
+                doctorFields.style.display = 'none';
+                patientFields.style.display = 'block';
+                licenseInput.required = false;
+                institutionInput.required = false;
+                telegramInput.required = true;
+                doctorEmailInput.required = false; // Optional for patients
+            }
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('user_type').dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html>

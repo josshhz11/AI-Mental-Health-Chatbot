@@ -1,0 +1,28 @@
+Create virtual environment (with echomindvenv as the virtual env name):
+python -m venv echomindvenv
+
+Activate virtual environment:
+echomindvenv\Scripts\activate
+
+Deactivate virtual environment:
+deactivate/exit
+
+NGROK Authentication
+(echomindvenv) C:\Users\joshua\OneDrive\Documents\Working Folder\NTU\Extracurriculars\Case Comps\NUS-Guru SG Innovation Challenge\New\WEBSITE>ngrok config add-authtoken 2uDcZibVRD6UTnjYsaGkFjAPlSU_473yHGpFbVhL8d4oXJ9wt
+Authtoken saved to configuration file: C:\Users\joshua\AppData\Local/ngrok/ngrok.yml
+
+TO SET UP NGROK CONNECTION AFTER HOSTING FastAPI
+ngrok http 8000 --region ap
+
+
+SEE IF NEED DELETE THIS PLACEHOLDER IN PATIENT_DETAIL() in main
+now = datetime.now()
+alerts = []
+previous_score = None
+three_day_change = 0
+weekly_avg = 65
+weekly_change = 0
+completion_rate = 92
+completed_sessions = 23
+total_sessions = 25
+missed_sessions = 0

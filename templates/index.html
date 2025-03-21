@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoMind - Mental Health Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">EchoMind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/portal">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="py-5 text-center">
+            <h1 class="display-4">EchoMind</h1>
+            <p class="lead">Intelligent Mental Health Monitoring for Patients and Providers</p>
+        </header>
+
+        <div class="row align-items-center py-5">
+            <div class="col-md-6">
+                <h2>Continuous Care Outside the Hospital</h2>
+                <p class="lead">EchoMind bridges the gap between in-person visits with an AI-powered system that checks in with patients daily through conversational interactions.</p>
+                <p>Our platform helps healthcare providers:</p>
+                <ul>
+                    <li>Monitor patient wellbeing remotely</li>
+                    <li>Identify concerning trends early</li>
+                    <li>Prioritize patients who need attention</li>
+                    <li>Make data-driven decisions</li>
+                </ul>
+                <div class="mt-4">
+                    <a href="/register" class="btn btn-primary me-2">Register Now</a>
+                    <a href="/login" class="btn btn-outline-secondary">Login</a>
+                </div>
+            </div>
+            <div class="col-md-6 text-center">
+                <img src="/static/img/hero-image.svg" alt="Hero image" class="hero-image">
+            </div>
+        </div>
+
+        <div class="row py-5">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">For Patients</h3>
+                        <p class="card-text">
+                            Connect with our friendly AI assistant via Telegram for daily check-ins. 
+                            No complex forms, just simple conversations to track your progress.
+                        </p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="/register" class="btn btn-outline-primary">Register as Patient</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">For Healthcare Providers</h3>
+                        <p class="card-text">
+                            Monitor your patients remotely with sentiment analysis and early warning alerts.
+                            Focus your attention where it's needed most.
+                        </p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="/register" class="btn btn-outline-primary">Register as Provider</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">Data-Driven Insights</h3>
+                        <p class="card-text">
+                            Advanced analytics provide trends, patterns, and insights into patient wellbeing,
+                            helping you make informed decisions.
+                        </p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="#features" class="btn btn-outline-primary">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section id="features" class="py-5">
+            <h2 class="text-center mb-4">Key Features</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Daily Check-ins</strong> - Conversational AI interacts with patients via Telegram
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Sentiment Analysis</strong> - Machine learning algorithms detect mood changes
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Early Warning System</strong> - Alerts for declining mental health indicators
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Detailed Analytics</strong> - Track trends and patterns in patient responses
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Provider Dashboard</strong> - Prioritize patients based on risk factors
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Secure Communication</strong> - End-to-end encrypted patient data
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-5 bg-light rounded">
+            <div class="text-center mb-5">
+                <h2>How It Works</h2>
+                <p class="lead">A simple process with powerful results</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h3 class="text-white m-0">1</h3>
+                        </div>
+                        <h4>Connect</h4>
+                        <p>Register and link your Telegram account to start daily check-ins</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h3 class="text-white m-0">2</h3>
+                        </div>
+                        <h4>Converse</h4>
+                        <p>Chat with our AI assistant daily about your thoughts and feelings</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="text-center">
+                        <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <h3 class="text-white m-0">3</h3>
+                        </div>
+                        <h4>Monitor</h4>
+                        <p>Your healthcare provider reviews insights and trends from your conversations</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-5">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2>Privacy and Security</h2>
+                    <p class="lead">We understand the sensitivity of mental health data</p>
+                    <p>EchoMind was built with privacy as a core principle:</p>
+                    <ul>
+                        <li>End-to-end encryption for all conversation data</li>
+                        <li>Strict access controls for healthcare providers</li>
+                        <li>Compliance with healthcare data regulations</li>
+                        <li>Option to delete your data at any time</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow">
+                        <div class="card-body p-4">
+                            <h3 class="card-title mb-3">Ready to get started?</h3>
+                            <p class="card-text mb-4">Join thousands of users who are improving their mental healthcare journey with EchoMind.</p>
+                            <div class="d-grid gap-2">
+                                <a href="/register" class="btn btn-primary">Register Now</a>
+                                <a href="/login" class="btn btn-outline-secondary">Login</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>EchoMind</h5>
+                    <p>Intelligent Mental Health Monitoring for Patients and Providers</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-white">Home</a></li>
+                        <li><a href="#features" class="text-white">Features</a></li>
+                        <li><a href="/register" class="text-white">Register</a></li>
+                        <li><a href="/login" class="text-white">Login</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li>Email: info@echomind.ai</li>
+                        <li>Phone: (65) 8123-4567</li>
+                        <li>Address: Singapore</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 EchoMind. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

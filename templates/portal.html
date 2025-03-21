@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoMind - Provider Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">EchoMind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user %}
+                        <li class="nav-item">
+                            <span class="nav-link text-light">Welcome, Dr. {{ user.last_name }}</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        Dashboard
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="/portal">
+                                    <i class="bi bi-speedometer2 me-2"></i>Overview
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/patients">
+                                    <i class="bi bi-people-fill me-2"></i>Patients
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/reports">
+                                    <i class="bi bi-file-earmark-text me-2"></i>Reports
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/settings">
+                                    <i class="bi bi-gear-fill me-2"></i>Settings
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-10">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Dashboard Overview</h5>
+                        <div>
+                            <span class="badge bg-light text-dark">Last updated: {{ now.strftime('%B %d, %Y %H:%M') }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card border-primary h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4">{{ patients|length }}</h1>
+                                        <p class="text-muted">Total Patients</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-warning h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4">{{ patients|selectattr('latest_score', 'le', 40)|list|length }}</h1>
+                                        <p class="text-muted">Low Sentiment</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-success h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4">{{ patients|selectattr('latest_score', 'ge', 70)|list|length }}</h1>
+                                        <p class="text-muted">High Sentiment</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-danger h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4">{{ alerts|length if alerts else 0 }}</h1>
+                                        <p class="text-muted">Alerts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Patient Sentiment Trends</h5>
+                                        <div class="chart-controls">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="showMean" checked>
+                                                <label class="form-check-label" for="showMean">Mean</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="showMedian">
+                                                <label class="form-check-label" for="showMedian">Median</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" id="showQ1Q3">
+                                                <label class="form-check-label" for="showQ1Q3">Q1/Q3</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="sentimentChart" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Alerts</h5>
+                                        {% if alerts %}
+                                        <span class="badge bg-danger">{{ alerts|length }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="list-group list-group-flush">
+                                            {% if alerts %}
+                                                {% for alert in alerts %}
+                                                <a href="/portal/patient/{{ alert.patient_id }}" class="list-group-item list-group-item-action {% if alert.priority == 'high' %}list-group-item-danger{% elif alert.priority == 'medium' %}list-group-item-warning{% else %}list-group-item-info{% endif %}">
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <h6 class="mb-1">{{ alert.patient_name }}</h6>
+                                                        <small>{{ alert.type }}</small>
+                                                    </div>
+                                                    <p class="mb-1">{{ alert.message }}</p>
+                                                    <small class="text-muted d-flex justify-content-between align-items-center">
+                                                        <span>{{ alert.created_at }}</span>
+                                                        <button class="btn btn-sm btn-outline-secondary resolve-alert-btn" 
+                                                                data-alert-id="{{ alert.alert_id }}"
+                                                                onclick="resolveAlert(event, {{ alert.alert_id }})">
+                                                            Mark Resolved
+                                                        </button>
+                                                    </small>
+                                                </a>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="text-center p-3 text-muted">
+                                                    <i class="bi bi-check-circle-fill fs-4"></i>
+                                                    <p>No alerts at this time</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Patient Overview</h5>
+                                <a href="/portal/patients" class="btn btn-sm btn-outline-primary">
+                                    View All Patients
+                                </a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Patient</th>
+                                                <th>Last Check-in</th>
+                                                <th>Current Score</th>
+                                                <th>7-Day Trend</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for patient in patients[:5] %}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="avatar-circle bg-secondary text-white me-2">
+                                                            {{ patient.name[0] }}
+                                                        </div>
+                                                        {{ patient.name }}
+                                                    </div>
+                                                </td>
+                                                <td>{{ patient.last_checkin|default('N/A') }}</td>
+                                                <td>{{ patient.latest_score|default('N/A') }}/100</td>
+                                                <td>
+                                                    <div class="sparkline-container" data-values="{{ patient.trend_data|join(',') }}"></div>
+                                                </td>
+                                                <td>
+                                                    {% if patient.latest_score >= 70 %}
+                                                        <span class="badge bg-success">Good</span>
+                                                    {% elif patient.latest_score >= 40 %}
+                                                        <span class="badge bg-warning">Moderate</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Low</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="/portal/patient/{{ patient.patient_id }}" class="btn btn-sm btn-primary">
+                                                        View Details
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sentiment trend chart
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            
+            // Sample data - would be replaced with actual data from backend
+            const dates = ['Mar 4', 'Mar 5', 'Mar 6', 'Mar 7', 'Mar 8', 'Mar 9', 'Mar 10'];
+            const meanData = [75, 72, 68, 65, 60, 55, 45];
+            const medianData = [78, 75, 70, 67, 62, 58, 50];
+            const q1Data = [65, 63, 60, 58, 55, 48, 35];
+            const q3Data = [85, 82, 78, 75, 70, 65, 60];
+            
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Mean Score',
+                            data: meanData,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Median Score',
+                            data: medianData,
+                            borderColor: 'rgb(153, 102, 255)',
+                            backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            hidden: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Q1',
+                            data: q1Data,
+                            borderColor: 'rgb(255, 159, 64)',
+                            backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            hidden: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Q3',
+                            data: q3Data,
+                            borderColor: 'rgb(54, 162, 235)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            hidden: true,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + '/100';
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            // Override legend labels to only show visible datasets
+                            labels: {
+                                filter: function(legendItem, chartData) {
+                                    // Only show legend items for visible datasets
+                                    return !chartData.datasets[legendItem.datasetIndex].hidden;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Sentiment Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Toggle chart elements based on checkboxes and update legend visibility
+            document.getElementById('showMean').addEventListener('change', function() {
+                chart.getDatasetMeta(0).hidden = !this.checked;
+                chart.update();
+            });
+            
+            document.getElementById('showMedian').addEventListener('change', function() {
+                chart.getDatasetMeta(1).hidden = !this.checked;
+                chart.update();
+            });
+            
+            document.getElementById('showQ1Q3').addEventListener('change', function() {
+                chart.getDatasetMeta(2).hidden = !this.checked;
+                chart.getDatasetMeta(3).hidden = !this.checked;
+                chart.update();
+            });
+            
+            // Create mini sparkline charts
+            const sparklineContainers = document.querySelectorAll('.sparkline-container');
+            sparklineContainers.forEach(container => {
+                const values = container.getAttribute('data-values').split(',').map(Number);
+                const canvas = document.createElement('canvas');
+                canvas.width = 80;
+                canvas.height = 30;
+                container.appendChild(canvas);
+                
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: Array(values.length).fill(''),
+                        datasets: [{
+                            data: values,
+                            borderColor: values[values.length - 1] > values[0] ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)',
+                            backgroundColor: 'transparent',
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            tooltip: {
+                                enabled: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: false
+                            },
+                            y: {
+                                display: false,
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            });
+        });
+
+        function resolveAlert(event, alertId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Send request to resolve the alert
+            fetch(`/portal/resolve-alert/${alertId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the alert from the UI
+                    const alertElement = event.target.closest('.list-group-item');
+                    alertElement.classList.add('fade-out');
+                    setTimeout(() => {
+                        alertElement.remove();
+                        
+                        // Check if there are any alerts left
+                        const alertsContainer = document.querySelector('.list-group');
+                        if (alertsContainer.children.length === 0) {
+                            alertsContainer.innerHTML = `
+                                <div class="text-center p-3 text-muted">
+                                    <i class="bi bi-check-circle-fill fs-4"></i>
+                                    <p>No alerts at this time</p>
+                                </div>
+                            `;
+                        }
+                        
+                        // Update the badge count
+                        const badge = document.querySelector('.card-header .badge');
+                        if (badge) {
+                            const count = parseInt(badge.textContent);
+                            if (count > 1) {
+                                badge.textContent = count - 1;
+                            } else {
+                                badge.remove();
+                            }
+                        }
+                    }, 300);
+                } else {
+                    alert('Failed to resolve alert. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while resolving the alert.');
+            });
+        }
+    </script>
+    <style>
+        .avatar-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .chart-controls {
+            display: flex;
+            align-items: center;
+        }
+        .sparkline-container {
+            display: inline-block;
+        }
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoMind - Patient List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">EchoMind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user %}
+                        <li class="nav-item">
+                            <span class="nav-link text-light">Welcome, Dr. {{ user.last_name }}</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        Dashboard
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal">
+                                    <i class="bi bi-speedometer2 me-2"></i>Overview
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="/portal/patients">
+                                    <i class="bi bi-people-fill me-2"></i>Patients
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/reports">
+                                    <i class="bi bi-file-earmark-text me-2"></i>Reports
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/settings">
+                                    <i class="bi bi-gear-fill me-2"></i>Settings
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Filters</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Sentiment Range</label>
+                            <div class="d-flex">
+                                <input type="number" class="form-control me-2" id="minScore" placeholder="Min" min="0" max="100">
+                                <input type="number" class="form-control" id="maxScore" placeholder="Max" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="statusGood" checked>
+                                <label class="form-check-label" for="statusGood">Good</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="statusModerate" checked>
+                                <label class="form-check-label" for="statusModerate">Moderate</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="statusLow" checked>
+                                <label class="form-check-label" for="statusLow">Low</label>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary w-100" id="applyFilters">Apply Filters</button>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Quick Stats</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Patients:</span>
+                            <strong>{{ patients|length }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Good Status:</span>
+                            <strong class="text-success">
+                                {{ patients|selectattr('latest_score', '>=', 70)|list|length }}
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Moderate Status:</span>
+                            <strong class="text-warning">
+                                {{ patients|selectattr('latest_score', '>=', 40)|selectattr('latest_score', '<', 70)|list|length }}
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Low Status:</span>
+                            <strong class="text-danger">
+                                {{ patients|selectattr('latest_score', '<', 40)|list|length }}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-10">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">All Patients</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="input-group" style="width: 300px;">
+                                <span class="input-group-text bg-light">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control" id="searchPatients" placeholder="Search patients...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="patientsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-sort="name">
+                                            Patient Name
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="telegram">
+                                            Telegram ID
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="last_checkin">
+                                            Last Check-in
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="latest_score">
+                                            Current Score
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="avg_score">
+                                            Avg (7-day)
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="cumulative_score">
+                                            Cumulative Score
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th>Trend</th>
+                                        <th class="sortable" data-sort="status">
+                                            Status
+                                            <i class="bi bi-arrow-down-up text-muted ms-1"></i>
+                                        </th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for patient in patients %}
+                                    <tr class="patient-row" 
+                                        data-name="{{ patient.name|lower }}"
+                                        data-score="{{ patient.latest_score }}"
+                                        data-status="{% if patient.latest_score >= 70 %}good{% elif patient.latest_score >= 40 %}moderate{% else %}low{% endif %}">
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-circle bg-secondary text-white me-2 d-flex align-items-center justify-content-center">
+                                                    {{ patient.first_name[0]|upper }}
+                                                </div>
+                                                {{ patient.name }}
+                                            </div>
+                                        </td>
+                                        <td>{{ patient.telegram_id|default('N/A') }}</td>
+                                        <td>{{ patient.last_checkin|default('N/A') }}</td>
+                                        <td>{{ patient.latest_score }}/100</td>
+                                        <td>{{ patient.avg_score }}/100</td>
+                                        <td>{{ patient.cumulative_score|default(patient.avg_score * 1.1)|round|int }}/100</td>
+                                        <td>
+                                            <div class="sparkline-container" data-values="{{ patient.trend_data|default('60,65,62,68,70,65,72')|string }}"></div>
+                                        </td>
+                                        <td>
+                                            {% if patient.latest_score >= 70 %}
+                                                <span class="badge bg-success">Good</span>
+                                            {% elif patient.latest_score >= 40 %}
+                                                <span class="badge bg-warning">Moderate</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Low</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="/portal/patient/{{ patient.patient_id }}" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-eye"></i> View
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#"><i class="bi bi-chat-dots"></i> Send Message</a></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="bi bi-journal-text"></i> View Notes</a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf"></i> Export Report</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Search functionality
+            const searchInput = document.getElementById('searchPatients');
+            searchInput.addEventListener('input', filterPatients);
+            
+            // Sorting functionality
+            const sortableHeaders = document.querySelectorAll('.sortable');
+            sortableHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const sortBy = this.getAttribute('data-sort');
+                    sortPatients(sortBy);
+                });
+            });
+            
+            // Filter button click
+            document.getElementById('applyFilters').addEventListener('click', filterPatients);
+            
+            // Create mini sparkline charts
+            const sparklineContainers = document.querySelectorAll('.sparkline-container');
+            sparklineContainers.forEach(container => {
+                // Use sample data if no real data is provided
+                const valuesAttr = container.getAttribute('data-values');
+                const values = valuesAttr ? valuesAttr.split(',').map(Number) : [60, 65, 62, 68, 70, 65, 72];
+                
+                // Create canvas for chart
+                const canvas = document.createElement('canvas');
+                canvas.height = 30;
+                container.appendChild(canvas);
+                
+                // Create chart
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: Array(values.length).fill(''),
+                        datasets: [{
+                            data: values,
+                            borderColor: values[values.length - 1] > values[0] ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.4,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: function() {
+                                        return 'Sentiment Score';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: false
+                            },
+                            y: {
+                                display: false,
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Search filter function
+            function filterPatients() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const minScore = parseInt(document.getElementById('minScore').value) || 0;
+                const maxScore = parseInt(document.getElementById('maxScore').value) || 100;
+                const statusGood = document.getElementById('statusGood').checked;
+                const statusModerate = document.getElementById('statusModerate').checked;
+                const statusLow = document.getElementById('statusLow').checked;
+                
+                const patientRows = document.querySelectorAll('.patient-row');
+                
+                patientRows.forEach(row => {
+                    const patientName = row.getAttribute('data-name');
+                    const patientScore = parseInt(row.getAttribute('data-score'));
+                    const patientStatus = row.getAttribute('data-status');
+                    
+                    // Check if name matches search term
+                    const nameMatches = patientName.includes(searchTerm);
+                    
+                    // Check if score is within range
+                    const scoreInRange = patientScore >= minScore && patientScore <= maxScore;
+                    
+                    // Check if status is enabled
+                    let statusEnabled = false;
+                    if (patientStatus === 'good' && statusGood) statusEnabled = true;
+                    if (patientStatus === 'moderate' && statusModerate) statusEnabled = true;
+                    if (patientStatus === 'low' && statusLow) statusEnabled = true;
+                    
+                    // Show/hide row based on filters
+                    if (nameMatches && scoreInRange && statusEnabled) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Sorting function
+            function sortPatients(sortBy) {
+                const table = document.getElementById('patientsTable');
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // Sort the rows based on the selected column
+                rows.sort((a, b) => {
+                    let aValue, bValue;
+                    
+                    if (sortBy === 'name') {
+                        aValue = a.getAttribute('data-name');
+                        bValue = b.getAttribute('data-name');
+                        return aValue.localeCompare(bValue);
+                    } else if (sortBy === 'latest_score' || sortBy === 'avg_score' || sortBy === 'cumulative_score') {
+                        // For score columns, extract the numeric value
+                        const aCell = a.querySelector(`td:nth-child(${sortBy === 'latest_score' ? 4 : sortBy === 'avg_score' ? 5 : 6})`);
+                        const bCell = b.querySelector(`td:nth-child(${sortBy === 'latest_score' ? 4 : sortBy === 'avg_score' ? 5 : 6})`);
+                        
+                        aValue = parseInt(aCell.textContent);
+                        bValue = parseInt(bCell.textContent);
+                        return bValue - aValue; // Sort high to low for scores
+                    } else if (sortBy === 'status') {
+                        const statusPriority = {
+                            'low': 1,
+                            'moderate': 2,
+                            'good': 3
+                        };
+                        
+                        aValue = statusPriority[a.getAttribute('data-status')];
+                        bValue = statusPriority[b.getAttribute('data-status')];
+                        return aValue - bValue; // Sort low to high for status
+                    }
+                    
+                    return 0;
+                });
+                
+                // Clear and repopulate the table
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                
+                rows.forEach(row => tbody.appendChild(row));
+            }
+        });
+    </script>
+    
+    <style>
+        .avatar-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .sparkline-container {
+            width: 100px;
+            height: 30px;
+        }
+        
+        .sortable {
+            cursor: pointer;
+        }
+        
+        .sortable:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .sortable i {
+            font-size: 0.8rem;
+        }
+    </style>
+</body>
+</html>

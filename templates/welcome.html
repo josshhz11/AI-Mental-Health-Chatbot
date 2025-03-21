@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to EchoMind - Start Your Journey</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .welcome-card {
+            max-width: 650px;
+            margin: 2rem auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .welcome-header {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .telegram-button {
+            background-color: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 0.75rem 2rem;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+        .telegram-button:hover {
+            background-color: #0077b5;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.3);
+            color: white;
+        }
+        .telegram-info {
+            background-color: #f0f7ff;
+            border-left: 4px solid #0088cc;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .telegram-qr {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+        .verification-code {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            background: #f8f9fa;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px dashed #adb5bd;
+            display: inline-block;
+            margin: 0.5rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="welcome-card">
+            <div class="welcome-header">
+                <h1><i class="bi bi-chat-heart-fill"></i> Welcome to EchoMind</h1>
+                {% if user.user_type == 'patient' %}
+                    <p class="lead mb-0">{{ user.first_name }}, your mental health journey begins here.</p>
+                {% else %}
+                    <p class="lead mb-0">Dr. {{ user.last_name }}, we're glad you've joined EchoMind.</p>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                {% if user.user_type == 'patient' %}
+                    <h3 class="mb-4">Start Your Journey with EchoMind</h3>
+                    <p>As a crucial first step, you'll need to submit this form and connect with our EchoMind assistant on Telegram. This secure messaging platform will be your daily check-in tool to track your well-being.</p>
+                    
+                    <div class="telegram-info mb-4">
+                        <h5><i class="bi bi-info-circle"></i> Important Information:</h5>
+                        <p>Your daily conversations with the EchoMind assistant are confidential and are only accessible to you and your healthcare provider.</p>
+                    </div>
+                    {% if request.query_params.get('preferences_updated') == 'true' %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Success!</strong> Your daily check-in preferences have been saved.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h5>Set Your Daily Check-in Time</h5>
+                        <form action="/update-preferences" method="post" class="mt-3">
+                            <div class="mb-3">
+                                <label for="timezone" class="form-label">Your Timezone</label>
+                                <select class="form-select" id="timezone" name="timezone" required>
+                                    <option value="UTC">UTC (Coordinated Universal Time)</option>
+                                    <option value="Asia/Singapore">Singapore Time (SGT)</option>
+                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                    <option value="Europe/London">London (GMT/BST)</option>
+                                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                                    <!-- Add more timezone options as needed -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="chat_time" class="form-label">Preferred Daily Check-in Time</label>
+                                <input type="time" class="form-control" id="chat_time" name="chat_time" value="19:00" required>
+                                <small class="text-muted">We'll send you a reminder at this time every day</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </form>
+                    </div>
+                    
+                    <div class="verification-code-section mt-4 p-3 bg-light rounded">
+                        <h5 class="mb-3">Connect with EchoMind on Telegram:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="verification-command p-3 border rounded position-relative bg-light">
+                                    <h6 class="text-muted">After starting the bot, send this command:</h6>
+                                    <code class="fs-5 d-block p-2 bg-white border rounded">/start {{ verification_code }}</code>
+                                    <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" 
+                                            onclick="copyCommand()">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                                <p class="small text-muted mt-2">This verification code will expire in 24 hours</p>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <p class="mb-3"><strong>Option 1:</strong> Click button to connect directly</p>
+                                <a href="https://t.me/TheEchoMindBot" 
+                                   target="_blank" class="telegram-button w-100">
+                                    <i class="bi bi-telegram"></i> Connect with Telegram
+                                </a>
+                                
+                                <div class="mt-3">
+                                    <p class="mb-1"><strong>Option 2:</strong> Scan QR code</p>
+                                    <img id="qrcode" src="/static/img/telegram-qr.png" alt="Telegram QR Code" class="img-thumbnail" style="max-width: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <h6><i class="bi bi-info-circle"></i> How to connect:</h6>
+                            <ol class="mb-0">
+                                <li>Click the "Connect with Telegram" button above or scan the QR code</li>
+                                <li>Press "Start" in Telegram to begin the conversation</li>
+                                <li>After seeing the welcome message, send this command to verify your account:</li>
+                                <li><code>/start {{ verification_code }}</code></li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p>After connecting to the bot, come back and click below:</p>
+                        <a href="/patient-portal" class="btn btn-primary">I've connected with the bot</a>
+                    </div>
+                {% else %}
+                    <h3 class="mb-4">Welcome to the EchoMind Platform</h3>
+                    <p>As a healthcare provider, you'll have access to patient insights and data collected through our AI assistant on Telegram.</p>
+                    
+                    <div class="telegram-info mb-4">
+                        <h5><i class="bi bi-info-circle"></i> About the EchoMind Assistant:</h5>
+                        <p>Your patients will interact with our AI assistant on Telegram. The assistant collects daily check-ins and provides sentiment analysis that you can review.</p>
+                    </div>
+                    
+                    <h4 class="mt-4 mb-3">Familiarize Yourself with the Assistant:</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="telegram-qr">
+                                <img src="/static/img/telegram-qr.png" alt="Telegram QR Code" class="img-fluid" style="max-width: 200px;">
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center justify-content-center flex-column">
+                            <p>You can try the assistant yourself:</p>
+                            <a href="https://t.me/TheEchoMindBot" class="telegram-button" target="_blank">
+                                <i class="bi bi-telegram" style="font-size: 1.5rem;"></i> Start Chat on Telegram
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="verification-code-section mt-4 p-3 bg-light rounded text-center">
+                        <h5>Your Verification Code:</h5>
+                        <div class="verification-code my-2">{{ verification_code }}</div>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyCode()">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                        <p class="small text-muted">When you start the chat with the bot, send: <code>/start {{ verification_code }}</code></p>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p>Ready to access your patient dashboard?</p>
+                        <a href="/portal" class="btn btn-primary">Go to Doctor Portal</a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center py-3">
+                <a href="/logout" class="btn btn-outline-secondary">Log Out</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function copyCommand() {
+        const code = "/start {{ verification_code }}";
+            navigator.clipboard.writeText(code).then(() => {
+                // Show temporary success message
+                const btn = document.querySelector('button[onclick="copyCommand()"]');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

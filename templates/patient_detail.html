@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoMind - Patient Detail</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">EchoMind</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user %}
+                        <li class="nav-item">
+                            <span class="nav-link text-light">Welcome, Dr. {{ user.last_name }}</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        Dashboard
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal">
+                                    <i class="bi bi-speedometer2 me-2"></i>Overview
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/patients">
+                                    <i class="bi bi-people-fill me-2"></i>Patients
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/reports">
+                                    <i class="bi bi-file-earmark-text me-2"></i>Reports
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/portal/settings">
+                                    <i class="bi bi-gear-fill me-2"></i>Settings
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Patient Info</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center">
+                                {{ patient.first_name[0]|upper }}{{ patient.last_name[0]|default('')|upper }}
+                            </div>
+                            <div>
+                                <h5 class="mb-1">{{ patient.first_name }} {{ patient.last_name }}</h5>
+                                <p class="mb-0 text-muted small">ID: {{ patient.id }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <i class="bi bi-envelope me-2 text-muted"></i>
+                            {{ patient.email }}
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-telephone me-2 text-muted"></i>
+                            {{ patient.phone }}
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-chat me-2 text-muted"></i>
+                            Telegram: {{ patient.telegram_id|default('Not provided') }}
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-calendar3 me-2 text-muted"></i>
+                            Joined: {{ patient.created_at|default('N/A') }}
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <span class="d-block mb-2">Current Status:</span>
+                            {% set latest = sentiment_data[-1] if sentiment_data and sentiment_data|length > 0 else {'score': 0, 'date': 'No data'} %}
+                            {% if latest.score >= 70 %}
+                                <span class="badge bg-success p-2 w-100">Good ({{ latest.score }}/100)</span>
+                            {% elif latest.score >= 40 %}
+                                <span class="badge bg-warning p-2 w-100">Moderate ({{ latest.score }}/100)</span>
+                            {% else %}
+                                <span class="badge bg-danger p-2 w-100">Low ({{ latest.score }}/100)</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#contactModal">
+                                <i class="bi bi-chat-dots me-2"></i>Contact Patient
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#notesModal">
+                                <i class="bi bi-journal-text me-2"></i>Add Notes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-10">
+                <!-- Alerts Section -->
+                {% if alerts %}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <h5><i class="bi bi-exclamation-triangle-fill me-2"></i>Alerts</h5>
+                    <ul class="mb-0">
+                        {% for alert in alerts %}
+                        <li>{{ alert.message }}</li>
+                        {% endfor %}
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                
+                <!-- Quick Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Current Score</h6>
+                                <div class="d-flex align-items-center">
+                                    {% set latest_score = sentiment_data|last|default({'score': 0})%}
+                                    <h3 class="mb-0">{{ latest_score.score }}/100</h3>
+                                    {% if previous_score %}
+                                        {% set change = latest_score.score - previous_score %}
+                                        {% if change > 0 %}
+                                            <span class="ms-2 badge bg-success">
+                                                <i class="bi bi-arrow-up"></i> {{ change }}
+                                            </span>
+                                        {% elif change < 0 %}
+                                            <span class="ms-2 badge bg-danger">
+                                                <i class="bi bi-arrow-down"></i> {{ change|abs }}
+                                            </span>
+                                        {% else %}
+                                            <span class="ms-2 badge bg-secondary">
+                                                <i class="bi bi-dash"></i> No change
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Last check-in: {{ latest_score.date|default('N/A') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 border-info">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">3-Day Trend</h6>
+                                {% set three_day_change = three_day_change|default(5) %}
+                                <div class="d-flex align-items-center">
+                                    <h3 class="mb-0">
+                                        {% if three_day_change > 0 %}
+                                            <span class="text-success">↗</span>
+                                        {% elif three_day_change < 0 %}
+                                            <span class="text-danger">↘</span>
+                                        {% else %}
+                                            <span class="text-secondary">→</span>
+                                        {% endif %}
+                                        {{ three_day_change|abs }}%
+                                    </h3>
+                                </div>
+                                <small class="text-muted">
+                                    {% if three_day_change > 0 %}
+                                        Improving over the past 3 days
+                                    {% elif three_day_change < 0 %}
+                                        Declining over the past 3 days
+                                    {% else %}
+                                        Stable over the past 3 days
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 border-warning">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Weekly Average</h6>
+                                <div class="d-flex align-items-center">
+                                    {% set weekly_avg = weekly_avg|default(65) %}
+                                    {% set weekly_change = weekly_change|default(-3) %}
+                                    <h3 class="mb-0">{{ weekly_avg }}/100</h3>
+                                    {% if weekly_change > 0 %}
+                                        <span class="ms-2 badge bg-success">
+                                            <i class="bi bi-arrow-up"></i> {{ weekly_change }}
+                                        </span>
+                                    {% elif weekly_change < 0 %}
+                                        <span class="ms-2 badge bg-danger">
+                                            <i class="bi bi-arrow-down"></i> {{ weekly_change|abs }}
+                                        </span>
+                                    {% else %}
+                                        <span class="ms-2 badge bg-secondary">
+                                            <i class="bi bi-dash"></i> No change
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Compared to previous week</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Session Completion</h6>
+                                <div class="d-flex align-items-center">
+                                    {% set completion_rate = completion_rate|default(92) %}
+                                    <h3 class="mb-0">{{ completion_rate }}%</h3>
+                                </div>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ completion_rate }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ completed_sessions|default(23) }}/{{ total_sessions|default(25) }} check-ins completed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Sentiment Chart -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Sentiment Score History</h5>
+                        <div>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-light active" data-range="week">Week</button>
+                                <button type="button" class="btn btn-light" data-range="month">Month</button>
+                                <button type="button" class="btn btn-light" data-range="all">All</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="sentimentChart" height="300"></canvas>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <!-- Session History Card -->
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Recent Sessions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Score</th>
+                                                <th>Status</th>
+                                                <th>Key Topics</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% if sentiment_data and sentiment_data|length > 0 %}
+                                                {% for session in sentiment_data|reverse %}
+                                                    {% if loop.index <= 5 %}
+                                                    <tr>
+                                                        <td>{{ session.date }}</td>
+                                                        <td>{{ session.score }}/100</td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-primary view-conversation" 
+                                                                data-bs-toggle="modal" data-bs-target="#conversationModal"
+                                                                data-date="{{ session.date }}" 
+                                                                data-score="{{ session.score }}">
+                                                                View Details
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center">No session data available</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted text-end">
+                                <a href="#" class="btn btn-sm btn-outline-primary">View All Sessions</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Alerts and Insights Card -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Insights & Alerts</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    {% set has_alerts = false %}
+
+                                    {% if weekly_change and weekly_change < -10 %}
+                                        {% set has_alerts = true %}
+                                        <li class="list-group-item list-group-item-danger">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                            <strong>Significant Decline:</strong> Weekly average has dropped by {{ weekly_change|abs }}% compared to last week.
+                                        </li>
+                                    {% endif %}
+
+                                    {% if three_day_change and three_day_change < -15 %}
+                                        {% set has_alerts = true %}
+                                        <li class="list-group-item list-group-item-danger">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                            <strong>Rapid Decline:</strong> Score has dropped by {{ three_day_change|abs }}% in the last 3 days.
+                                        </li>
+                                    {% endif %}
+
+                                    {% if latest_score and latest_score.score < 30 %}
+                                        {% set has_alerts = true %}
+                                        <li class="list-group-item list-group-item-danger">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                            <strong>Critical Score:</strong> Current score is extremely low ({{ latest_score.score }}/100).
+                                        </li>
+                                    {% endif %}
+
+                                    {% if missed_sessions and missed_sessions > 1 %}
+                                        {% set has_alerts = true %}
+                                        <li class="list-group-item list-group-item-warning">
+                                            <i class="bi bi-calendar-x-fill me-2"></i>
+                                            <strong>Missed Sessions:</strong> Patient has missed {{ missed_sessions }} check-ins recently.
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% if three_day_change and three_day_change > 15 %}
+                                        <li class="list-group-item list-group-item-success">
+                                            <i class="bi bi-graph-up-arrow me-2"></i>
+                                            <strong>Rapid Improvement:</strong> Score has improved by {{ three_day_change }}% in the last 3 days.
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% if weekly_change and weekly_change > 10 %}
+                                        <li class="list-group-item list-group-item-success">
+                                            <i class="bi bi-graph-up-arrow me-2"></i>
+                                            <strong>Consistent Improvement:</strong> Weekly average has increased by {{ weekly_change }}%.
+                                        </li>
+                                    {% endif %}
+
+                                    {% if not has_alerts %}
+                                        <li class="list-group-item list-group-item-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            <strong>Stable Pattern:</strong> No significant concerns detected in recent data.
+                                        </li>
+                                    {% endif %}
+                                </ul>
+
+                                <div class="mt-3">
+                                    <h6 class="mb-2">Common Themes</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for theme in ['anxiety', 'sleep', 'work', 'family', 'social', 'appetite'] %}
+                                            <span class="badge rounded-pill bg-light text-dark border">{{ theme }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation Analysis Card -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Conversation Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Sentiment Distribution</h6>
+                                <canvas id="sentimentDistribution" height="200"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3">Topic Frequency</h6>
+                                <canvas id="topicsChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Modal -->
+    <div class="modal fade" id="conversationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Conversation Detail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>Date:</strong> <span id="modal-date"></span>
+                            </div>
+                            <div>
+                                <strong>Score:</strong> <span id="modal-score"></span>/100
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3 text-muted">Conversation Transcript:</h6>
+                                <p id="modal-conversation" class="mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Add Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Patient Modal -->
+    <div class="modal fade" id="contactModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Contact Patient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="contactMethod" class="form-label">Contact Method</label>
+                            <select class="form-select" id="contactMethod">
+                                <option value="telegram">Telegram</option>
+                                <option value="email">Email</option>
+                                <option value="phone">Phone</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="messageSubject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="messageSubject">
+                        </div>
+                        <div class="mb-3">
+                            <label for="messageContent" class="form-label">Message</label>
+                            <textarea class="form-control" id="messageContent" rows="5"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Send Message</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Notes Modal -->
+    <div class="modal fade" id="notesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Clinical Notes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="noteType" class="form-label">Note Type</label>
+                            <select class="form-select" id="noteType">
+                                <option value="observation">Observation</option>
+                                <option value="assessment">Assessment</option>
+                                <option value="treatment">Treatment Plan</option>
+                                <option value="followup">Follow-up</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="noteContent" class="form-label">Notes</label>
+                            <textarea class="form-control" id="noteContent" rows="6"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Save Notes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize main sentiment chart with safe data handling
+            const sentimentData = {{ sentiment_data|tojson }};
+            const dates = (sentimentData && sentimentData.length > 0) 
+                ? sentimentData.map(item => item.date) 
+                : ['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04', '2023-01-05'];
+            const scores = (sentimentData && sentimentData.length > 0) 
+                ? sentimentData.map(item => item.score) 
+                : [50, 55, 60, 58, 65];
+            
+            // Main sentiment chart
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            const sentimentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Sentiment Score',
+                        data: scores,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Score'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        annotation: {
+                            annotations: {
+                                lowLine: {
+                                    type: 'line',
+                                    yMin: 40,
+                                    yMax: 40,
+                                    borderColor: 'rgba(255, 99, 132, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: 'Low Threshold',
+                                        enabled: true,
+                                        position: 'start'
+                                    }
+                                },
+                                highLine: {
+                                    type: 'line',
+                                    yMin: 70,
+                                    yMax: 70,
+                                    borderColor: 'rgba(75, 192, 192, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        content: 'High Threshold',
+                                        enabled: true,
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Time range buttons for main chart
+            const rangeButtons = document.querySelectorAll('[data-range]');
+            rangeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    rangeButtons.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Filter data based on selected range
+                    const range = this.getAttribute('data-range');
+                    let filteredDates, filteredScores;
+                    
+                    if (range === 'week') {
+                        const cutoff = new Date();
+                        cutoff.setDate(cutoff.getDate() - 7);
+                        
+                        const filteredData = sentimentData.filter(item => {
+                            const itemDate = new Date(item.date);
+                            return itemDate >= cutoff;
+                        });
+                        
+                        filteredDates = filteredData.map(item => item.date);
+                        filteredScores = filteredData.map(item => item.score);
+                    } else if (range === 'month') {
+                        const cutoff = new Date();
+                        cutoff.setDate(cutoff.getDate() - 30);
+                        
+                        const filteredData = sentimentData.filter(item => {
+                            // Continuing from where the code was cut off
+                            const itemDate = new Date(item.date);
+                            return itemDate >= cutoff;
+                        });
+                        
+                        filteredDates = filteredData.map(item => item.date);
+                        filteredScores = filteredData.map(item => item.score);
+                    } else { // all
+                        filteredDates = dates;
+                        filteredScores = scores;
+                    }
+                    
+                    // Update chart data
+                    sentimentChart.data.labels = filteredDates;
+                    sentimentChart.data.datasets[0].data = filteredScores;
+                    sentimentChart.update();
+                });
+            });
+            
+            // Initialize sentiment distribution chart
+            const distributionCtx = document.getElementById('sentimentDistribution').getContext('2d');
+            
+            // Count scores in each category
+            const goodScores = sentimentData.filter(item => item.score >= 70).length;
+            const moderateScores = sentimentData.filter(item => item.score >= 40 && item.score < 70).length;
+            const lowScores = sentimentData.filter(item => item.score < 40).length;
+            
+            new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Good (70-100)', 'Moderate (40-69)', 'Low (0-39)'],
+                    datasets: [{
+                        data: [goodScores, moderateScores, lowScores],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(255, 99, 132, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Initialize topic frequency chart
+            const topicsCtx = document.getElementById('topicsChart').getContext('2d');
+            
+            // Sample data - in a real application, this would come from backend analysis
+            const topicData = {
+                'anxiety': 12,
+                'sleep': 8,
+                'work': 7,
+                'family': 5,
+                'social': 4,
+                'appetite': 3
+            };
+            
+            new Chart(topicsCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(topicData),
+                    datasets: [{
+                        label: 'Frequency',
+                        data: Object.values(topicData),
+                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Mentions'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Handle conversation modal
+            const conversationButtons = document.querySelectorAll('.view-conversation');
+            conversationButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const date = this.getAttribute('data-date');
+                    const score = this.getAttribute('data-score');
+                    const conversation = this.getAttribute('data-conversation');
+                    
+                    document.getElementById('modal-date').textContent = date;
+                    document.getElementById('modal-score').textContent = score;
+                    document.getElementById('modal-conversation').textContent = conversation;
+                });
+            });
+            
+            // Calculate trend indicators - this would typically come from the backend
+            // but we're simulating it here for demonstration
+            function calculateTrendChange() {
+                if (sentimentData.length < 4) return 0;
+                
+                // For 3-day trend
+                const recent = sentimentData.slice(-3);
+                const firstScore = recent[0].score;
+                const lastScore = recent[recent.length - 1].score;
+                
+                return Math.round(((lastScore - firstScore) / firstScore) * 100);
+            }
+            
+            function calculateWeeklyChange() {
+                if (sentimentData.length < 14) return 0;
+                
+                // Calculate current week average
+                const currentWeek = sentimentData.slice(-7);
+                const currentAvg = currentWeek.reduce((sum, item) => sum + item.score, 0) / currentWeek.length;
+                
+                // Calculate previous week average
+                const previousWeek = sentimentData.slice(-14, -7);
+                const previousAvg = previousWeek.reduce((sum, item) => sum + item.score, 0) / previousWeek.length;
+                
+                return Math.round(((currentAvg - previousAvg) / previousAvg) * 100);
+            }
+            
+            // Update trend indicators if they're not provided by backend
+            const threeDay = document.querySelector('.card.border-info .text-success, .card.border-info .text-danger, .card.border-info .text-secondary');
+            if (threeDay) {
+                const change = calculateTrendChange();
+                if (change !== 0) {
+                    const sign = change > 0 ? '↗' : '↘';
+                    const className = change > 0 ? 'text-success' : 'text-danger';
+                    threeDay.className = className;
+                    threeDay.textContent = `${sign} ${Math.abs(change)}%`;
+                }
+            }
+            
+            const weeklyChange = document.querySelector('.card.border-warning .badge');
+            if (weeklyChange) {
+                const change = calculateWeeklyChange();
+                if (change !== 0) {
+                    const icon = change > 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+                    const className = change > 0 ? 'bg-success' : 'bg-danger';
+                    weeklyChange.className = `ms-2 badge ${className}`;
+                    weeklyChange.innerHTML = `<i class="bi ${icon}"></i> ${Math.abs(change)}`;
+                }
+            }
+        }); // End of DOMContentLoaded event listener
+    </script>
+</body>
+</html>
