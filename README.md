@@ -21,3 +21,4 @@ EchoMind is a mental health monitoring platform that connects patients with heal
 ### Installation
 
 1. Clone the repository:
+2. TBC
